@@ -9,49 +9,49 @@ Build a Streamlit-based Generative AI document Q&A app that supports PDF, TXT, C
 ## Planned implementation phases
 
 1. Project foundation
-   - Add Python dependency files.
-   - Add `.env.example` for Ollama Cloud and local app settings.
-   - Create the initial module layout under `src/`.
-   - Add `.gitignore` entries for local secrets, caches, vector DB files, and generated artifacts.
+   - Done: added Python dependency files.
+   - Done: added `.env.example` for Ollama Cloud/local Ollama and local app settings.
+   - Done: created the module layout under `src/`.
+   - Done: added `.gitignore` entries for local secrets, caches, vector DB files, and generated artifacts.
 
 2. Document ingestion
-   - Implement loaders for PDF, TXT, CSV, and Excel.
-   - Normalize parsed content into a common document/chunk input shape.
-   - Keep source metadata such as file name, page, sheet, row range, or document type when available.
+   - Done: implemented loaders for PDF, TXT, CSV, and Excel.
+   - Done: normalized parsed content into a common document/chunk input shape.
+   - Done: kept source metadata such as file name, page, sheet, row range, and document type when available.
 
 3. Chunking and indexing
-   - Add recursive chunking with overlap.
-   - Generate embeddings using SentenceTransformers.
-   - Store chunks, embeddings, and metadata in Chroma.
-   - Make indexing repeatable from Streamlit uploads.
+   - Done: added recursive chunking with overlap.
+   - Done: generated embeddings using SentenceTransformers.
+   - Done: stored chunks, embeddings, and metadata in Chroma.
+   - Done: made indexing repeatable from Streamlit uploads.
 
 4. Retrieval and RAG
-   - Search Chroma for relevant chunks.
-   - Build a grounded prompt that tells the model to answer only from retrieved context.
-   - Call Ollama Cloud API through a small LLM client module.
-   - Return answer text, source chunks, and retrieval confidence signals.
+   - Done: searched Chroma for relevant chunks.
+   - Done: built a grounded prompt that tells the model to answer only from retrieved context.
+   - Done: called an Ollama-compatible API through a small LLM client module.
+   - Done: returned answer text, source chunks, and retrieval confidence signals.
 
 5. Agent workflow
-   - Add `QueryPlannerAgent`, `RetrievalAgent`, `AnswerAgent`, and `ValidationAgent`.
-   - Keep planner and validator mostly rule-based for the MVP.
-   - Use only one LLM call per user question at first, inside the answer agent.
+   - Done: added `QueryPlannerAgent`, `RetrievalAgent`, `AnswerAgent`, and `ValidationAgent`.
+   - Done: kept planner and validator rule-based for the MVP.
+   - Done: used only one LLM call per user question, inside the answer agent.
 
 6. Streamlit UI
-   - Provide document upload controls.
-   - Show indexing status in plain language.
-   - Provide a question box and answer panel.
-   - Show sources and any validation warnings beside the answer.
+   - Done: provided document upload controls.
+   - Done: showed indexing status in plain language.
+   - Done: provided a question box and answer panel.
+   - Done: showed sources and validation warnings beside the answer.
 
 7. Reliability and safety
-   - Reject unsupported file types.
-   - Handle empty uploads, empty questions, and documents with no extractable text.
-   - Warn when retrieval confidence is weak or no context is found.
-   - Avoid success-shaped fallbacks that hide errors.
+   - Done: rejected unsupported file types.
+   - Done: handled empty uploads, empty questions, and documents with no extractable text.
+   - Done: warned when retrieval confidence is weak or no context is found.
+   - Done: avoided success-shaped fallbacks that hide missing model settings.
 
 8. Documentation and packaging
-   - Expand `README.md` with setup, run commands, architecture, workflow, agent roles, deployment steps, limitations, and challenges.
-   - Keep `docs/decisions.md` updated with major choices and reasons.
-   - Document what should be included in the final zip and what should be excluded.
+   - Done: expanded `README.md` with setup, run commands, architecture, workflow, agent roles, deployment steps, limitations, and challenges.
+   - Done: kept `docs/decisions.md` updated with major choices and reasons.
+   - Done: documented what should be included in the final zip and what should be excluded.
 
 ## Implementation kickoff plan
 
@@ -138,6 +138,8 @@ Upload TXT or PDF
 
 After the vertical slice works, add CSV/Excel support, validation improvements, tests, and final documentation.
 
+Current status: the vertical slice is implemented for PDF, TXT, CSV, and Excel. The app can index uploaded files into Chroma, retrieve source chunks, call an Ollama-compatible model when configured, and show retrieval-only guidance when model settings are placeholders.
+
 ## Implementation defaults
 
 - Use Streamlit as the only user interface for the first complete demo.
@@ -148,7 +150,14 @@ After the vertical slice works, add CSV/Excel support, validation improvements, 
 
 ## Validation checkpoints
 
-- After dependency files are added, install from `requirements.txt`.
-- After core modules are added, run `pytest`.
-- After the Streamlit entry point is wired, run a Python import/compile check and verify the app can be started locally.
-- Before each commit, check `git status` so unrelated or generated files are not included.
+- Done: after dependency files were added, installed from `requirements.txt`.
+- Done: after core modules were added, ran `pytest`.
+- Done: after the Streamlit entry point was wired, ran Python compile checks.
+- Done: before each commit, checked `git status` so generated files were not included.
+
+## Remaining nice-to-haves
+
+- Add OCR for scanned PDFs if needed.
+- Add Docker if the final submission needs containerized deployment.
+- Add keyword or TF-IDF fallback retrieval if the embedding model is too heavy for the review machine.
+- Add sample documents if the course submission allows non-sensitive demo data.

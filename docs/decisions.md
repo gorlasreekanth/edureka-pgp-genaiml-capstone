@@ -47,6 +47,15 @@ The PDF was reviewed at implementation kickoff and calls out the same core tasks
 | Deployment path | Document local Streamlit deployment first | Docker can be added later if time allows, but local run steps are enough for the capstone handoff. |
 | Folder structure | Use `app.py`, `src/`, `tests/`, and `docs/` | Keeps ingestion, retrieval, generation, agents, and safety code separated without making the project feel overbuilt. |
 
+## Implementation decisions
+
+| Area | Decision | Reason |
+|---|---|---|
+| LLM placeholder behavior | Keep retrieval working when `OLLAMA_MODEL` is still a placeholder | Reviewers can validate upload, parsing, chunking, vector search, and source display before model credentials are available. |
+| Validation | Surface warnings beside the answer | This keeps weak context, retrieval misses, and missing model settings visible instead of hiding them behind success messages. |
+| Tests | Use fakes for workflow tests | Tests validate orchestration without downloading embedding models or calling external APIs. |
+| Spreadsheet ingestion | Convert rows into readable text with row metadata | Simple, transparent, and sufficient for the capstone document Q&A workflow. |
+
 ## RAG and agent plan
 
 Initial flow:

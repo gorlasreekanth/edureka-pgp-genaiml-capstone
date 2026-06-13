@@ -14,10 +14,10 @@ The project uses a Python Streamlit scaffold with modular code under `src/`.
 
 Use these commands once the local virtual environment exists:
 
-- install dependencies: `python -m pip install -r requirements.txt`
-- run the app: `streamlit run app.py`
-- run the full test suite: `pytest`
-- run a single test: `pytest tests/test_name.py::test_function_name`
+- install dependencies: `.\.venv\Scripts\python -m pip install -r requirements.txt`
+- run the app: `.\.venv\Scripts\streamlit run app.py`
+- run the full test suite: `.\.venv\Scripts\python -m pytest`
+- run a single test: `.\.venv\Scripts\python -m pytest tests\test_name.py::test_function_name`
 - linting/formatting: no dedicated lint or format command has been added yet
 
 ## Target architecture
