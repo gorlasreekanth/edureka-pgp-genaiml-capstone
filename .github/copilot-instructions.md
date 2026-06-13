@@ -10,15 +10,15 @@ Use `docs/decisions.md` as the running decision log for project assumptions, opt
 
 ## Current project state
 
-No application scaffold, dependency manifest, test suite, lint configuration, or build system exists yet. Do not assume npm, pytest, Streamlit, FastAPI, LangChain, LlamaIndex, or any other framework command until the corresponding files are added.
+The project uses a Python Streamlit scaffold with modular code under `src/`.
 
-When project tooling is introduced, update this file with the exact commands for:
+Use these commands once the local virtual environment exists:
 
-- installing dependencies
-- running the app
-- running the full test suite
-- running a single test
-- linting/formatting
+- install dependencies: `python -m pip install -r requirements.txt`
+- run the app: `streamlit run app.py`
+- run the full test suite: `pytest`
+- run a single test: `pytest tests/test_name.py::test_function_name`
+- linting/formatting: no dedicated lint or format command has been added yet
 
 ## Target architecture
 

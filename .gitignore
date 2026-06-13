@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Local environments and secrets
+.venv/
+.env
+.env.*
+!.env.example
+
+# Streamlit and generated app state
+.streamlit/secrets.toml
+data/
+chroma_db/
+uploads/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

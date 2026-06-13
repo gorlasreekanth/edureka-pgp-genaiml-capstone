@@ -1,0 +1,9 @@
+streamlit>=1.36,<2
+python-dotenv>=1.0,<2
+requests>=2.32,<3
+pypdf>=4.2,<7
+pandas>=2.2,<3
+openpyxl>=3.1,<4
+chromadb>=0.5,<1
+sentence-transformers>=3.0,<6
+pytest>=8,<9
