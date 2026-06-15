@@ -29,9 +29,7 @@ class AppConfig:
             ollama_api_base=_get_str("OLLAMA_API_BASE", "https://ollama.com").rstrip("/"),
             ollama_api_key=_get_optional_str("OLLAMA_API_KEY"),
             ollama_model=_get_str("OLLAMA_MODEL", "replace-with-your-ollama-model"),
-            embedding_model=_get_str(
-                "EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2"
-            ),
+            embedding_model=_get_str("EMBEDDING_MODEL", "local-hash"),
             chroma_path=Path(_get_str("CHROMA_PATH", "chroma_db")),
             chroma_collection=_get_str("CHROMA_COLLECTION", "document_qa"),
             chunk_size=_get_int("CHUNK_SIZE", 900),

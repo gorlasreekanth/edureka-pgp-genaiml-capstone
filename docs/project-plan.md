@@ -138,7 +138,7 @@ Upload TXT or PDF
 
 After the vertical slice works, add CSV/Excel support, validation improvements, tests, and final documentation.
 
-Current status: the vertical slice is implemented for PDF, TXT, CSV, and Excel. The app can index uploaded files into Chroma, retrieve source chunks, call an Ollama-compatible model when configured, and return a retrieval-only provisional answer when model settings are placeholders.
+Current status: the vertical slice is implemented for PDF, TXT, CSV, and Excel. The app can index uploaded files into Chroma, retrieve source chunks, call an Ollama-compatible model when configured, and return a retrieval-only provisional answer when model settings are placeholders. Local demos default to fast no-download hash embeddings, while SentenceTransformers remains available by setting `EMBEDDING_MODEL`.
 
 ## Implementation defaults
 

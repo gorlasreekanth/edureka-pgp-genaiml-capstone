@@ -55,6 +55,7 @@ The PDF was reviewed at implementation kickoff and calls out the same core tasks
 | Validation | Surface warnings beside the answer | This keeps weak context, retrieval misses, and missing model settings visible instead of hiding them behind success messages. |
 | Tests | Use fakes for workflow tests | Tests validate orchestration without downloading embedding models or calling external APIs. |
 | Spreadsheet ingestion | Convert rows into readable text with row metadata | Simple, transparent, and sufficient for the capstone document Q&A workflow. |
+| Fast local embeddings | Default to `local-hash`, with SentenceTransformers still available through `EMBEDDING_MODEL` | Local demos should not look stuck while downloading a model; reviewers can opt into stronger semantic retrieval when the environment is ready. |
 
 ## RAG and agent plan
 

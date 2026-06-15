@@ -35,6 +35,8 @@ def _render_sidebar(config: AppConfig) -> None:
         st.write(f"Vector store: `{config.chroma_path}`")
         st.write(f"Collection: `{config.chroma_collection}`")
         st.write(f"Top K: `{config.retrieval_top_k}`")
+        if config.embedding_model == "local-hash":
+            st.info("Using fast local embeddings. Switch `EMBEDDING_MODEL` for stronger semantic retrieval.")
         if config.has_configured_llm:
             st.success(f"Ollama model: `{config.ollama_model}`")
         else:
@@ -65,8 +67,16 @@ def _render_upload_and_index(workflow: DocumentQAWorkflow) -> None:
 
     if index_clicked:
         files = [(file.name, file.getvalue()) for file in uploaded_files]
-        with st.spinner("Parsing, chunking, embedding, and storing document content..."):
-            result = workflow.index_files(files, reset=True)
+        with st.status("Preparing documents for search...", expanded=True) as status:
+            result = workflow.index_files(
+                files,
+                reset=True,
+                progress_callback=status.write,
+            )
+            if result.indexed_chunk_count > 0:
+                status.update(label="Document index is ready.", state="complete")
+            else:
+                status.update(label="No document text was indexed.", state="error")
         st.session_state["indexed"] = result.indexed_chunk_count > 0
         st.session_state["index_result"] = result
 

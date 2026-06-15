@@ -25,6 +25,8 @@ OLLAMA_MODEL=llama3.1
 
 For Ollama Cloud, use the base URL, API key, and model name provided by the account. Do not commit `.env`.
 
+The default `EMBEDDING_MODEL=local-hash` is a fast no-download option for local demos. For stronger semantic retrieval, set `EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2`; the first upload may take longer while the model downloads and loads.
+
 ## Run the app
 
 ```powershell
@@ -52,7 +54,7 @@ Run one test file or test function:
 app.py
  -> src.ingestion loads PDF, TXT, CSV, and Excel content
  -> src.rag.chunking prepares overlapping chunks
- -> src.rag.embeddings creates SentenceTransformers vectors
+ -> src.rag.embeddings creates local hash or SentenceTransformers vectors
  -> src.retrieval stores and searches chunks in Chroma
  -> src.agents plans, retrieves, answers, and validates
  -> src.llm calls the Ollama-compatible chat API
@@ -65,7 +67,7 @@ The code is intentionally small and modular so ingestion, retrieval, generation,
 1. Upload documents in Streamlit.
 2. Parse each file into normalized text with source metadata such as file name, page, sheet, row range, and chunk number.
 3. Split text into overlapping chunks.
-4. Embed chunks with the configured SentenceTransformers model.
+4. Embed chunks with the configured embedding provider.
 5. Store chunks and metadata in a local Chroma collection.
 6. Normalize the question, retrieve top matching chunks, and pass that context to the answer agent.
 7. Generate the answer with Ollama when configured, or show a retrieval-only answer from the best matching chunks when it is not.
@@ -102,6 +104,7 @@ Do not include `.env`, `.venv`, `chroma_db`, `data`, `uploads`, caches, or local
 
 - Scanned PDFs without extractable text are rejected with a clear warning; OCR is not included yet.
 - The first retrieval path uses SentenceTransformers plus Chroma only; there is no keyword fallback yet.
+- `local-hash` embeddings are fast and offline-friendly, but less semantic than SentenceTransformers.
 - The Ollama model name and endpoint are environment settings because the exact runtime account can differ by reviewer.
 - CSV and Excel files are converted into row-oriented text, which is explainable but not optimized for very large spreadsheets.
 - The app is designed for a capstone demo, not multi-user production hosting or authenticated enterprise deployment.

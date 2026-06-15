@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Protocol
 
 from src.agents import AnswerAgent, QueryPlannerAgent, RetrievalAgent, ValidationAgent
@@ -8,8 +9,11 @@ from src.ingestion import DocumentLoadError, load_uploaded_file
 from src.llm import OllamaClient
 from src.models import IndexResult, QueryResult, TextChunk
 from src.rag.chunking import chunk_documents
-from src.rag.embeddings import SentenceTransformerEmbeddings
+from src.rag.embeddings import create_embedding_provider
 from src.retrieval import ChromaVectorStore
+
+
+ProgressCallback = Callable[[str], None]
 
 
 class IndexableVectorStore(Protocol):
@@ -38,7 +42,7 @@ class DocumentQAWorkflow:
 
     @classmethod
     def from_config(cls, config: AppConfig) -> "DocumentQAWorkflow":
-        embeddings = SentenceTransformerEmbeddings(config.embedding_model)
+        embeddings = create_embedding_provider(config.embedding_model)
         vector_store = ChromaVectorStore(
             path=config.chroma_path,
             collection_name=config.chroma_collection,
@@ -57,10 +61,16 @@ class DocumentQAWorkflow:
             validation_agent=ValidationAgent(),
         )
 
-    def index_files(self, files: list[tuple[str, bytes]], reset: bool = True) -> IndexResult:
+    def index_files(
+        self,
+        files: list[tuple[str, bytes]],
+        reset: bool = True,
+        progress_callback: ProgressCallback | None = None,
+    ) -> IndexResult:
         if not files:
             raise ValueError("Upload at least one document before indexing.")
 
+        _report(progress_callback, "Parsing uploaded files...")
         documents = []
         errors: list[str] = []
         for file_name, content in files:
@@ -70,6 +80,7 @@ class DocumentQAWorkflow:
                 errors.append(str(exc))
 
         if not documents:
+            _report(progress_callback, "No extractable document text was found.")
             return IndexResult(
                 document_count=0,
                 chunk_count=0,
@@ -77,14 +88,21 @@ class DocumentQAWorkflow:
                 errors=errors,
             )
 
+        _report(progress_callback, f"Chunking {len(documents)} parsed document sections...")
         chunks = chunk_documents(
             documents,
             chunk_size=self.config.chunk_size,
             chunk_overlap=self.config.chunk_overlap,
         )
         if reset:
+            _report(progress_callback, "Resetting the local vector collection...")
             self.vector_store.clear()
+        _report(
+            progress_callback,
+            f"Embedding and storing {len(chunks)} chunks using `{self.config.embedding_model}`...",
+        )
         indexed_count = self.vector_store.upsert_chunks(chunks)
+        _report(progress_callback, f"Indexed {indexed_count} chunks.")
         return IndexResult(
             document_count=len(documents),
             chunk_count=len(chunks),
@@ -108,3 +126,8 @@ class DocumentQAWorkflow:
             warnings=validation.warnings,
             used_llm=draft.used_llm,
         )
+
+
+def _report(progress_callback: ProgressCallback | None, message: str) -> None:
+    if progress_callback:
+        progress_callback(message)

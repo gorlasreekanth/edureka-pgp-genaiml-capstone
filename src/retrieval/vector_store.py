@@ -15,11 +15,15 @@ class ChromaVectorStore:
         embedding_provider: EmbeddingProvider,
     ) -> None:
         import chromadb
+        from chromadb.config import Settings
 
         self.path = path
         self.collection_name = collection_name
         self.embedding_provider = embedding_provider
-        self.client = chromadb.PersistentClient(path=str(path))
+        self.client = chromadb.PersistentClient(
+            path=str(path),
+            settings=Settings(anonymized_telemetry=False),
+        )
         self.collection = self.client.get_or_create_collection(
             name=collection_name,
             metadata={"hnsw:space": "cosine"},
@@ -53,10 +57,14 @@ class ChromaVectorStore:
         if top_k <= 0:
             raise ValueError("top_k must be greater than zero.")
 
+        available_count = self.collection.count()
+        if available_count == 0:
+            return []
+
         query_embedding = self.embedding_provider.embed_query(normalized_question)
         results = self.collection.query(
             query_embeddings=[query_embedding],
-            n_results=top_k,
+            n_results=min(top_k, available_count),
             include=["documents", "metadatas", "distances"],
         )
 
