@@ -73,6 +73,8 @@ def test_workflow_shows_retrieval_when_llm_is_placeholder() -> None:
 
     assert query_result.used_llm is False
     assert query_result.sources
+    assert "retrieval-only answer" in query_result.answer
+    assert "Customer churn improved after onboarding" in query_result.answer
     assert any("LLM" in warning for warning in query_result.warnings)
 
 

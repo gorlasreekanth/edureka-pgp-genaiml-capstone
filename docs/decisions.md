@@ -51,7 +51,7 @@ The PDF was reviewed at implementation kickoff and calls out the same core tasks
 
 | Area | Decision | Reason |
 |---|---|---|
-| LLM placeholder behavior | Keep retrieval working when `OLLAMA_MODEL` is still a placeholder | Reviewers can validate upload, parsing, chunking, vector search, and source display before model credentials are available. |
+| LLM placeholder behavior | Return a retrieval-only answer when `OLLAMA_MODEL` is still a placeholder | Reviewers can validate upload, parsing, chunking, vector search, and source display before model credentials are available, while still getting a useful provisional answer. |
 | Validation | Surface warnings beside the answer | This keeps weak context, retrieval misses, and missing model settings visible instead of hiding them behind success messages. |
 | Tests | Use fakes for workflow tests | Tests validate orchestration without downloading embedding models or calling external APIs. |
 | Spreadsheet ingestion | Convert rows into readable text with row metadata | Simple, transparent, and sufficient for the capstone document Q&A workflow. |

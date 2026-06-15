@@ -40,12 +40,11 @@ class AnswerAgent:
 
         if not self.llm_client.is_configured:
             return AnswerDraft(
-                answer=(
-                    "The documents were searched, but the LLM is not configured yet. "
-                    "Add `OLLAMA_MODEL` and any required Ollama Cloud settings in `.env` to generate a final answer."
-                ),
+                answer=_build_retrieval_only_answer(sources),
                 used_llm=False,
-                warnings=["LLM settings are placeholders, so only source retrieval is shown."],
+                warnings=[
+                    "LLM settings are placeholders, so this is a retrieval-only answer from matching source chunks."
+                ],
             )
 
         prompt = _build_grounded_prompt(plan.question, sources)
@@ -80,6 +79,32 @@ def _build_grounded_prompt(question: str, sources: list[RetrievedChunk]) -> str:
         f"{'\n\n'.join(context_blocks)}\n\n"
         "Answer from the context above. If the context is weak or missing, say so instead of guessing."
     )
+
+
+def _build_retrieval_only_answer(sources: list[RetrievedChunk]) -> str:
+    lines = [
+        "This is a retrieval-only answer because LLM generation is not configured yet. Vector search found these relevant passages:",
+        "",
+    ]
+    for index, source in enumerate(sources[:3], start=1):
+        lines.append(
+            f"{index}. {_source_label(source)} (score {source.relevance_score:.2f}): "
+            f"{_snippet(source.text)}"
+        )
+    lines.extend(
+        [
+            "",
+            "Use these passages as the provisional answer and check the source sections below for full context.",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _snippet(text: str, max_length: int = 450) -> str:
+    normalized = " ".join(text.split())
+    if len(normalized) <= max_length:
+        return normalized
+    return normalized[: max_length - 3].rstrip() + "..."
 
 
 def _source_label(source: RetrievedChunk) -> str:

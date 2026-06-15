@@ -2,7 +2,7 @@
 
 Generative AI and ML capstone project for an enterprise document Q&A application using RAG and lightweight agent-based reasoning.
 
-The app lets a user upload PDF, TXT, CSV, and Excel files, builds a local vector index, retrieves relevant source chunks for a question, and uses an Ollama-compatible chat API to generate a grounded answer when model settings are configured. If the model is still a placeholder, the app still shows retrieval results and explains what is missing.
+The app lets a user upload PDF, TXT, CSV, and Excel files, builds a local vector index, retrieves relevant source chunks for a question, and uses an Ollama-compatible chat API to generate a grounded answer when model settings are configured. If the model is still a placeholder, the app returns a retrieval-only answer from the best matching chunks and explains what is missing.
 
 ## Setup
 
@@ -68,7 +68,7 @@ The code is intentionally small and modular so ingestion, retrieval, generation,
 4. Embed chunks with the configured SentenceTransformers model.
 5. Store chunks and metadata in a local Chroma collection.
 6. Normalize the question, retrieve top matching chunks, and pass that context to the answer agent.
-7. Generate the answer with Ollama when configured, or show a clear retrieval-only placeholder when it is not.
+7. Generate the answer with Ollama when configured, or show a retrieval-only answer from the best matching chunks when it is not.
 8. Validate the result for missing context, weak retrieval, empty answers, and placeholder LLM settings.
 
 ## Agent roles
@@ -77,10 +77,10 @@ The code is intentionally small and modular so ingestion, retrieval, generation,
 |---|---|
 | QueryPlannerAgent | Cleans the user question and chooses retrieval settings. |
 | RetrievalAgent | Searches the vector store for relevant document chunks. |
-| AnswerAgent | Builds a grounded prompt and calls the Ollama-compatible chat API. |
+| AnswerAgent | Builds a grounded prompt and calls the Ollama-compatible chat API, or produces a retrieval-only answer when the LLM is not configured. |
 | ValidationAgent | Adds warnings for missing context, weak retrieval, empty responses, or placeholder LLM settings. |
 
-Only the answer agent makes an LLM call in the current implementation. The planner and validator are rule-based so the demo remains easy to explain and debug.
+Only the answer agent makes an LLM call in the current implementation. The planner and validator are rule-based so the demo remains easy to explain and debug. When LLM settings are placeholders, the answer agent still returns the most relevant retrieved passages as a provisional answer.
 
 ## Deployment
 
