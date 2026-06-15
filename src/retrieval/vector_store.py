@@ -26,11 +26,7 @@ class ChromaVectorStore:
         )
 
     def clear(self) -> None:
-        collection_names = [
-            getattr(collection, "name", collection)
-            for collection in self.client.list_collections()
-        ]
-        if self.collection_name in collection_names:
+        if self.collection_name in self.client.list_collections():
             self.client.delete_collection(self.collection_name)
         self.collection = self.client.get_or_create_collection(
             name=self.collection_name,
