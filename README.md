@@ -35,6 +35,8 @@ The default `EMBEDDING_MODEL=local-hash` is a fast no-download option for local 
 
 Then open the local Streamlit URL, upload one or more supported documents, click **Index documents**, and ask a question.
 
+Use the sidebar **Top K source chunks** slider to choose how many retrieved chunks are used for each answer. `RETRIEVAL_TOP_K` in `.env` sets the default slider value.
+
 ## Run tests
 
 ```powershell

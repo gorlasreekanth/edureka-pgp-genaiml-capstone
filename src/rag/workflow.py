@@ -110,8 +110,8 @@ class DocumentQAWorkflow:
             errors=errors,
         )
 
-    def ask(self, question: str) -> QueryResult:
-        plan = self.query_planner.plan(question, self.config.retrieval_top_k)
+    def ask(self, question: str, top_k: int | None = None) -> QueryResult:
+        plan = self.query_planner.plan(question, top_k or self.config.retrieval_top_k)
         sources = self.retrieval_agent.retrieve(plan)
         draft = self.answer_agent.answer(plan, sources)
         validation = self.validation_agent.validate(

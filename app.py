@@ -22,25 +22,32 @@ def main() -> None:
         "Upload enterprise documents, ask a natural-language question, and get a grounded answer with sources."
     )
 
-    _render_sidebar(config)
+    top_k = _render_sidebar(config)
     _render_upload_and_index(workflow)
-    _render_question_flow(workflow)
+    _render_question_flow(workflow, top_k)
 
 
-def _render_sidebar(config: AppConfig) -> None:
+def _render_sidebar(config: AppConfig) -> int:
     with st.sidebar:
         st.header("Runtime settings")
         st.caption("Values come from environment variables or `.env`.")
         st.write(f"Embedding model: `{config.embedding_model}`")
         st.write(f"Vector store: `{config.chroma_path}`")
         st.write(f"Collection: `{config.chroma_collection}`")
-        st.write(f"Top K: `{config.retrieval_top_k}`")
+        top_k = st.slider(
+            "Top K source chunks",
+            min_value=1,
+            max_value=10,
+            value=config.retrieval_top_k,
+            help="How many matching chunks to retrieve for each question.",
+        )
         if config.embedding_model == "local-hash":
             st.info("Using fast local embeddings. Switch `EMBEDDING_MODEL` for stronger semantic retrieval.")
         if config.has_configured_llm:
             st.success(f"Ollama model: `{config.ollama_model}`")
         else:
             st.warning("Ollama model is still a placeholder. Retrieval will work, but final answers need `.env`.")
+        return top_k
 
 
 def _render_upload_and_index(workflow: DocumentQAWorkflow) -> None:
@@ -101,7 +108,7 @@ def _render_index_result(result: IndexResult) -> None:
                 st.write(f"- {error}")
 
 
-def _render_question_flow(workflow: DocumentQAWorkflow) -> None:
+def _render_question_flow(workflow: DocumentQAWorkflow, top_k: int) -> None:
     st.subheader("2. Ask a question")
     indexed = bool(st.session_state.get("indexed"))
     question = st.text_input(
@@ -117,7 +124,7 @@ def _render_question_flow(workflow: DocumentQAWorkflow) -> None:
 
     if ask_clicked:
         with st.spinner("Retrieving sources and preparing an answer..."):
-            result = workflow.ask(question)
+            result = workflow.ask(question, top_k=top_k)
         _render_query_result(result)
 
 

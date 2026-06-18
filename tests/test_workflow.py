@@ -78,6 +78,21 @@ def test_workflow_shows_retrieval_when_llm_is_placeholder() -> None:
     assert any("LLM" in warning for warning in query_result.warnings)
 
 
+def test_workflow_allows_top_k_override() -> None:
+    vector_store = FakeVectorStore()
+    workflow = _build_workflow(vector_store, FakeChatClient(configured=False))
+
+    workflow.index_files(
+        [
+            ("first.txt", b"First document discusses churn."),
+            ("second.txt", b"Second document discusses revenue."),
+        ]
+    )
+    query_result = workflow.ask("What do the documents discuss?", top_k=1)
+
+    assert len(query_result.sources) == 1
+
+
 def _build_workflow(
     vector_store: FakeVectorStore,
     chat_client: FakeChatClient,
