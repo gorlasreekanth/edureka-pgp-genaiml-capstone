@@ -56,6 +56,8 @@ The PDF was reviewed at implementation kickoff and calls out the same core tasks
 | Tests | Use fakes for workflow tests | Tests validate orchestration without downloading embedding models or calling external APIs. |
 | Spreadsheet ingestion | Convert rows into readable text with row metadata | Simple, transparent, and sufficient for the capstone document Q&A workflow. |
 | Fast local embeddings | Default to `local-hash`, with SentenceTransformers still available through `EMBEDDING_MODEL` | Local demos should not look stuck while downloading a model; reviewers can opt into stronger semantic retrieval when the environment is ready. |
+| Ollama Cloud auth | Treat `https://ollama.com` as the Cloud host and require `OLLAMA_API_KEY` before making LLM calls | The direct Cloud API uses bearer-token auth, while local Ollama should still work without a key. |
+| Used-source display | Ask the answer model to end with a parseable `Used sources:` line and show those sources separately from all retrieved candidates | Reviewers can see which chunks were selected by retrieval and which chunks the generated answer claims to rely on. |
 
 ## RAG and agent plan
 
@@ -72,7 +74,7 @@ User uploads files
  -> RetrievalAgent
  -> AnswerAgent using Ollama Cloud API
  -> ValidationAgent
- -> Streamlit shows answer, sources, and any confidence warning
+ -> Streamlit shows answer, used sources, retrieved source candidates, and any confidence warning
 ```
 
 Agent roles should stay simple at first:
@@ -81,8 +83,8 @@ Agent roles should stay simple at first:
 |---|---|
 | QueryPlannerAgent | Rule-based cleanup/normalization of the user question and retrieval settings. |
 | RetrievalAgent | Searches Chroma for relevant chunks and returns source metadata. |
-| AnswerAgent | Builds a grounded prompt and calls Ollama Cloud API. |
-| ValidationAgent | Checks for missing context, empty answers, weak retrieval, and unsupported-answer warnings. |
+| AnswerAgent | Builds a grounded prompt, calls Ollama Cloud API, and parses the model's declared used-source numbers. |
+| ValidationAgent | Checks for missing context, empty answers, weak retrieval, missing source-use declarations, and unsupported-answer warnings. |
 
 Only the answer agent needs an LLM call in the MVP. Keeping the planner and validator mostly rule-based should make the demo faster, cheaper, and easier to debug.
 

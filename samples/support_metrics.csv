@@ -1,0 +1,5 @@
+metric,baseline,target,owner,note
+Average policy search time,12 minutes,2 minutes,Support operations,Main productivity target for the document Q&A pilot
+Weekly repeated questions,85,40,Knowledge management,Repeated questions should drop after better document discovery
+Reviewer confidence,Medium,High,Digital Workplace,Confidence depends on clear source citations and cautious answers
+Documents approved,18,25,Policy team,Launch risk remains if the approved set is delayed

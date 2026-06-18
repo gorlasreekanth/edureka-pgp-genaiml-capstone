@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
+from urllib.parse import urlparse
 
 import requests
 
@@ -35,34 +36,57 @@ class OllamaClient:
 
     @property
     def is_configured(self) -> bool:
-        return bool(self.api_base and self.model and not self.model.startswith("replace-with-"))
+        return self.configuration_issue is None
+
+    @property
+    def configuration_issue(self) -> str | None:
+        if not self.api_base:
+            return "Set OLLAMA_API_BASE before asking the model to generate answers."
+        if not self.model or self.model.startswith("replace-with-"):
+            return "Set OLLAMA_MODEL in .env before asking the model to generate answers."
+        if self.uses_ollama_cloud and not self.api_key:
+            return "Set OLLAMA_API_KEY in .env to use Ollama Cloud."
+        return None
+
+    @property
+    def uses_ollama_cloud(self) -> bool:
+        parsed = urlparse(self.api_base if "://" in self.api_base else f"https://{self.api_base}")
+        host = parsed.hostname or ""
+        return host == "ollama.com" or host.endswith(".ollama.com")
 
     def chat(self, messages: list[ChatMessage]) -> str:
-        if not self.is_configured:
-            raise LLMConfigurationError(
-                "Set OLLAMA_MODEL in .env before asking the model to generate answers."
-            )
+        if self.configuration_issue:
+            raise LLMConfigurationError(self.configuration_issue)
 
-        response = requests.post(
-            f"{self.api_base}/api/chat",
-            json={
-                "model": self.model,
-                "messages": [message.__dict__ for message in messages],
-                "stream": False,
-            },
-            headers=self._headers(),
-            timeout=self.timeout_seconds,
-        )
         try:
+            response = requests.post(
+                self._chat_url(),
+                json={
+                    "model": self.model,
+                    "messages": [message.__dict__ for message in messages],
+                    "stream": False,
+                },
+                headers=self._headers(),
+                timeout=self.timeout_seconds,
+            )
             response.raise_for_status()
-        except requests.HTTPError as exc:
-            raise LLMClientError(f"Ollama API request failed: {response.text}") from exc
+        except requests.RequestException as exc:
+            detail = getattr(exc.response, "text", None) or str(exc)
+            raise LLMClientError(f"Ollama API request failed: {detail}") from exc
 
-        data = response.json()
+        try:
+            data = response.json()
+        except ValueError as exc:
+            raise LLMClientError("Ollama API response was not valid JSON.") from exc
         content = _extract_content(data)
         if not content:
             raise LLMClientError("Ollama API response did not include answer content.")
         return content.strip()
+
+    def _chat_url(self) -> str:
+        if self.api_base.endswith("/api"):
+            return f"{self.api_base}/chat"
+        return f"{self.api_base}/api/chat"
 
     def _headers(self) -> dict[str, str]:
         headers = {"Content-Type": "application/json"}

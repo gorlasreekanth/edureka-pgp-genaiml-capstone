@@ -48,3 +48,27 @@ class QueryResult:
     sources: list[RetrievedChunk]
     warnings: list[str]
     used_llm: bool
+    used_source_indices: list[int] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "used_source_indices",
+            normalize_source_indices(self.used_source_indices, len(self.sources)),
+        )
+
+    @property
+    def used_sources(self) -> list[RetrievedChunk]:
+        return [
+            self.sources[index - 1]
+            for index in self.used_source_indices
+            if 1 <= index <= len(self.sources)
+        ]
+
+
+def normalize_source_indices(indices: list[int], source_count: int) -> list[int]:
+    valid_indices = []
+    for index in indices:
+        if 1 <= index <= source_count and index not in valid_indices:
+            valid_indices.append(index)
+    return valid_indices

@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 
@@ -21,6 +22,7 @@ class AppConfig:
     chunk_overlap: int
     retrieval_top_k: int
     min_relevance_score: float
+    ollama_timeout_seconds: int = 120
 
     @classmethod
     def from_env(cls) -> "AppConfig":
@@ -29,6 +31,7 @@ class AppConfig:
             ollama_api_base=_get_str("OLLAMA_API_BASE", "https://ollama.com").rstrip("/"),
             ollama_api_key=_get_optional_str("OLLAMA_API_KEY"),
             ollama_model=_get_str("OLLAMA_MODEL", "replace-with-your-ollama-model"),
+            ollama_timeout_seconds=_get_int("OLLAMA_TIMEOUT_SECONDS", 120),
             embedding_model=_get_str("EMBEDDING_MODEL", "local-hash"),
             chroma_path=Path(_get_str("CHROMA_PATH", "chroma_db")),
             chroma_collection=_get_str("CHROMA_COLLECTION", "document_qa"),
@@ -40,7 +43,25 @@ class AppConfig:
 
     @property
     def has_configured_llm(self) -> bool:
-        return not self.ollama_model.startswith("replace-with-")
+        return self.llm_configuration_issue is None
+
+    @property
+    def uses_ollama_cloud(self) -> bool:
+        return _is_ollama_cloud_base(self.ollama_api_base)
+
+    @property
+    def ollama_runtime_label(self) -> str:
+        if self.uses_ollama_cloud:
+            return "Ollama Cloud"
+        return "local/custom Ollama"
+
+    @property
+    def llm_configuration_issue(self) -> str | None:
+        if self.ollama_model.startswith("replace-with-"):
+            return "Set OLLAMA_MODEL in .env before asking the LLM to generate final answers."
+        if self.uses_ollama_cloud and not self.ollama_api_key:
+            return "Set OLLAMA_API_KEY in .env to use Ollama Cloud."
+        return None
 
 
 def _get_str(name: str, default: str) -> str:
@@ -84,3 +105,9 @@ def _get_float(name: str, default: float) -> float:
     if value < 0:
         raise ValueError(f"{name} cannot be negative.")
     return value
+
+
+def _is_ollama_cloud_base(api_base: str) -> bool:
+    parsed = urlparse(api_base if "://" in api_base else f"https://{api_base}")
+    host = parsed.hostname or ""
+    return host == "ollama.com" or host.endswith(".ollama.com")

@@ -3,7 +3,8 @@ from __future__ import annotations
 import streamlit as st
 
 from src.config import AppConfig
-from src.models import IndexResult, QueryResult, RetrievedChunk
+from src.llm import LLMClientError, LLMConfigurationError
+from src.models import IndexResult, QueryResult, RetrievedChunk, normalize_source_indices
 from src.rag import DocumentQAWorkflow
 
 
@@ -34,6 +35,8 @@ def _render_sidebar(config: AppConfig) -> int:
         st.write(f"Embedding model: `{config.embedding_model}`")
         st.write(f"Vector store: `{config.chroma_path}`")
         st.write(f"Collection: `{config.chroma_collection}`")
+        st.write(f"LLM host: `{config.ollama_runtime_label}`")
+        st.caption(f"Ollama API base: `{config.ollama_api_base}`")
         top_k = st.slider(
             "Top K source chunks",
             min_value=1,
@@ -44,9 +47,14 @@ def _render_sidebar(config: AppConfig) -> int:
         if config.embedding_model == "local-hash":
             st.info("Using fast local embeddings. Switch `EMBEDDING_MODEL` for stronger semantic retrieval.")
         if config.has_configured_llm:
-            st.success(f"Ollama model: `{config.ollama_model}`")
+            st.success(f"{config.ollama_runtime_label} model: `{config.ollama_model}`")
         else:
-            st.warning("Ollama model is still a placeholder. Retrieval will work, but final answers need `.env`.")
+            st.warning(
+                f"{config.llm_configuration_issue} Retrieval will still work, but final answers need `.env`."
+            )
+        if config.uses_ollama_cloud:
+            key_status = "configured" if config.ollama_api_key else "missing"
+            st.caption(f"Ollama Cloud API key: {key_status}")
         return top_k
 
 
@@ -111,24 +119,39 @@ def _render_index_result(result: IndexResult) -> None:
 def _render_question_flow(workflow: DocumentQAWorkflow, top_k: int) -> None:
     st.subheader("2. Ask a question")
     indexed = bool(st.session_state.get("indexed"))
-    question = st.text_input(
-        "Question",
-        placeholder="Example: What risks or action items are mentioned in these documents?",
-        disabled=not indexed,
-    )
-    ask_clicked = st.button("Ask documents", disabled=not indexed or not question.strip())
+    with st.form("question_form"):
+        question = st.text_input(
+            "Question",
+            placeholder="Example: What risks or action items are mentioned in these documents?",
+            disabled=not indexed,
+        )
+        ask_clicked = st.form_submit_button("Ask documents", disabled=not indexed)
 
     if not indexed:
         st.info("Index documents first, then ask a question.")
         return
 
     if ask_clicked:
+        question = question.strip()
+        if not question:
+            st.warning("Enter a question before asking the documents.")
+            return
         with st.spinner("Retrieving sources and preparing an answer..."):
-            result = workflow.ask(question, top_k=top_k)
+            try:
+                result = workflow.ask(question, top_k=top_k)
+            except (LLMConfigurationError, LLMClientError) as exc:
+                st.error(str(exc))
+                return
         _render_query_result(result)
 
 
 def _render_query_result(result: QueryResult) -> None:
+    sources = result.sources
+    used_source_indices = normalize_source_indices(
+        getattr(result, "used_source_indices", []),
+        len(sources),
+    )
+
     st.markdown("### Answer")
     st.write(result.answer)
 
@@ -136,15 +159,31 @@ def _render_query_result(result: QueryResult) -> None:
         for warning in result.warnings:
             st.warning(warning)
 
-    st.markdown("### Sources")
-    if not result.sources:
+    if used_source_indices:
+        st.markdown("### Sources used in the answer")
+        for source_number in used_source_indices:
+            if not 1 <= source_number <= len(sources):
+                continue
+            source = sources[source_number - 1]
+            with st.expander(
+                f"Source {source_number}: {_source_label(source)} (score {source.relevance_score:.2f})",
+                expanded=True,
+            ):
+                st.write(source.text)
+    elif result.used_llm and sources:
+        st.info("No specific source was marked as used. The retrieved candidates are shown below.")
+
+    st.markdown("### Retrieved source candidates")
+    if not sources:
         st.write("No source chunks were retrieved.")
         return
 
-    for index, source in enumerate(result.sources, start=1):
+    used_source_numbers = set(used_source_indices)
+    for index, source in enumerate(sources, start=1):
+        used_suffix = " - used" if index in used_source_numbers else ""
         with st.expander(
-            f"Source {index}: {_source_label(source)} (score {source.relevance_score:.2f})",
-            expanded=index == 1,
+            f"Source {index}{used_suffix}: {_source_label(source)} (score {source.relevance_score:.2f})",
+            expanded=index == 1 and not used_source_numbers,
         ):
             st.write(source.text)
 

@@ -28,8 +28,9 @@ Build a Streamlit-based Generative AI document Q&A app that supports PDF, TXT, C
 4. Retrieval and RAG
    - Done: searched Chroma for relevant chunks.
    - Done: built a grounded prompt that tells the model to answer only from retrieved context.
-   - Done: called an Ollama-compatible API through a small LLM client module.
-   - Done: returned answer text, source chunks, and retrieval confidence signals.
+   - Done: called Ollama Cloud or a local Ollama-compatible API through a small LLM client module.
+   - Done: required `OLLAMA_API_KEY` for the direct Ollama Cloud host while preserving local Ollama without a key.
+   - Done: returned answer text, source chunks, source-use declarations, and retrieval confidence signals.
 
 5. Agent workflow
    - Done: added `QueryPlannerAgent`, `RetrievalAgent`, `AnswerAgent`, and `ValidationAgent`.
@@ -40,7 +41,7 @@ Build a Streamlit-based Generative AI document Q&A app that supports PDF, TXT, C
    - Done: provided document upload controls.
    - Done: showed indexing status in plain language.
    - Done: provided a question box and answer panel.
-   - Done: showed sources and validation warnings beside the answer.
+   - Done: showed sources used in the answer, all retrieved source candidates, and validation warnings beside the answer.
 
 7. Reliability and safety
    - Done: rejected unsupported file types.
@@ -51,6 +52,7 @@ Build a Streamlit-based Generative AI document Q&A app that supports PDF, TXT, C
 8. Documentation and packaging
    - Done: expanded `README.md` with setup, run commands, architecture, workflow, agent roles, deployment steps, limitations, and challenges.
    - Done: kept `docs/decisions.md` updated with major choices and reasons.
+   - Done: added safe sample files for reviewer demos.
    - Done: documented what should be included in the final zip and what should be excluded.
 
 ## Implementation kickoff plan
@@ -138,7 +140,7 @@ Upload TXT or PDF
 
 After the vertical slice works, add CSV/Excel support, validation improvements, tests, and final documentation.
 
-Current status: the vertical slice is implemented for PDF, TXT, CSV, and Excel. The app can index uploaded files into Chroma, retrieve source chunks, call an Ollama-compatible model when configured, and return a retrieval-only provisional answer when model settings are placeholders. Local demos default to fast no-download hash embeddings, while SentenceTransformers remains available by setting `EMBEDDING_MODEL`.
+Current status: the vertical slice is implemented for PDF, TXT, CSV, and Excel. The app can index uploaded files into Chroma, retrieve source chunks, call Ollama Cloud or local Ollama when configured, and return a retrieval-only provisional answer when model settings or Cloud credentials are missing. Local demos default to fast no-download hash embeddings, while SentenceTransformers remains available by setting `EMBEDDING_MODEL`.
 
 ## Implementation defaults
 

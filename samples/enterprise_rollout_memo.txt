@@ -1,0 +1,20 @@
+Enterprise rollout memo
+
+Project: Knowledge Assist pilot
+Owner: Digital Workplace team
+Target launch: July 15
+
+The pilot will start with the customer support and finance operations teams. The main business goal is to reduce the time employees spend searching policy documents and repeated support notes.
+
+Current risks:
+- The highest launch risk is delayed access to approved policy documents.
+- A secondary risk is low adoption if reviewers cannot see which source passages were used in each answer.
+
+Action items:
+- Maya will confirm the final policy document set by July 3.
+- Omar will prepare a short reviewer walkthrough that shows upload, indexing, question answering, and source citations.
+- The team will keep human review in place for answers with weak or missing context.
+
+Success measures:
+- Support analysts should find relevant policy answers in under two minutes.
+- The demo should show the answer, the sources retrieved, and the specific source passages used by the LLM.

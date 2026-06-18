@@ -52,6 +52,7 @@ class DocumentQAWorkflow:
             api_base=config.ollama_api_base,
             api_key=config.ollama_api_key,
             model=config.ollama_model,
+            timeout_seconds=config.ollama_timeout_seconds,
         )
         return cls(
             config=config,
@@ -125,6 +126,7 @@ class DocumentQAWorkflow:
             sources=sources,
             warnings=validation.warnings,
             used_llm=draft.used_llm,
+            used_source_indices=draft.used_source_indices,
         )
 
 

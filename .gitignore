@@ -17,6 +17,10 @@ data/
 chroma_db/
 uploads/
 
+# Local/private documents used during manual testing
+*.pdf
+!project-overview-guidelines.pdf
+
 # OS/editor noise
 .DS_Store
 Thumbs.db
