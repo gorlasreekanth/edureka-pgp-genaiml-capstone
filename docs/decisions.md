@@ -14,7 +14,7 @@ The PDF was reviewed at implementation kickoff and calls out the same core tasks
 
 - This is a hack/capstone project, so the first goal is a working, explainable demo rather than a production platform.
 - The app should support PDF, TXT, CSV, and Excel documents because those formats are explicitly listed in the overview.
-- We will avoid a separate frontend/backend for the MVP unless the project later needs multiple clients, authentication, or production APIs.
+- A separate frontend/backend is avoided for the MVP unless the project later needs multiple clients, authentication, or production APIs.
 - User-facing text, documentation, prompts, and generated answer templates should sound natural and human-written.
 - The app should be honest when retrieved context is weak or missing instead of inventing confident answers.
 

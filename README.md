@@ -163,7 +163,7 @@ The zip should contain code and sample inputs, never local secrets, generated ve
 
 ## Reliability and safety controls
 
-We try to reject bad input early — before parsing, embedding, or any LLM call — and to be honest in the answer when something looks off:
+Bad input is rejected early — before parsing, embedding, or any LLM call — and the answer stays honest when something looks off:
 
 - **Upload checks** (`src.validation.validate_uploaded_file`) — block unsupported extensions, empty files, and uploads over `MAX_FILE_SIZE_MB`.
 - **Question checks** (`src.validation.validate_question`) — enforce `MIN_QUESTION_CHARS` / `MAX_QUESTION_CHARS` and reject the most common prompt-injection phrasings.
@@ -173,7 +173,7 @@ The validation helpers run in two places on purpose: in `app.py` so the user see
 
 ## Limitations
 
-- Scanned PDFs without an embedded text layer are rejected with a clear message. We do not run OCR yet.
+- Scanned PDFs without an embedded text layer are rejected with a clear message. OCR is not run yet.
 - Retrieval is currently SentenceTransformers + Chroma only. There is no keyword or BM25 fallback when embeddings miss.
 - `local-hash` embeddings are fast and need no download, but they are weaker than a real sentence-transformer model. Switch `EMBEDDING_MODEL` when you want better recall.
 - Ollama Cloud needs `OLLAMA_API_KEY`. Local Ollama runs without one. The model and endpoint live in `.env` because the right values change per reviewer.
@@ -183,10 +183,10 @@ The validation helpers run in two places on purpose: in `app.py` so the user see
 
 ## Challenges faced
 
-- **Telling "retrieved" apart from "actually used".** Showing every retrieved chunk made it look like the model relied on all of them, which it often didn't. We added a `Used sources: 1, 2` contract in the prompt and parse it back out, then show the two sets in separate panels. When the model forgets the line, the UI says so instead of pretending.
-- **Streamlit module caching during development.** Streamlit reruns `app.py` on save but does not reimport modules that are already loaded. Adding a function in `src/` and importing it from `app.py` would fail with `ImportError` until the Python process was fully restarted, which was confusing the first time we hit it. The fix is mechanical (kill the process and rerun) but worth noting in the run instructions.
+- **Telling "retrieved" apart from "actually used".** Showing every retrieved chunk made it look like the model relied on all of them, which it often did not. A `Used sources: 1, 2` contract was added to the prompt and is parsed back out, with the two sets shown in separate panels. When the model forgets the line, the UI says so instead of pretending.
+- **Streamlit module caching during development.** Streamlit reruns `app.py` on save but does not reimport modules that are already loaded. Adding a function in `src/` and importing it from `app.py` would fail with `ImportError` until the Python process was fully restarted, which was confusing the first time it surfaced. The fix is mechanical (kill the process and rerun) but worth noting in the run instructions.
 - **Working without a guaranteed network.** Embedding model downloads and Ollama Cloud are both easy to lose during a demo. The `local-hash` embedding option and the retrieval-only answer mode let the app still do something useful when the network or the LLM is unavailable.
-- **PDFs that aren't really PDFs.** Scanned or DRM-wrapped PDFs have no extractable text. We chose to reject them up front rather than index an empty string, because a fluent answer over zero context is worse than an honest failure.
+- **PDFs that are not really PDFs.** Scanned or DRM-wrapped PDFs have no extractable text. They are rejected up front rather than indexed as empty strings, because a fluent answer over zero context is worse than an honest failure.
 
 ## Planning docs
 
