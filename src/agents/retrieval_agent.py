@@ -16,4 +16,4 @@ class RetrievalAgent:
         self.vector_store = vector_store
 
     def retrieve(self, plan: QueryPlan) -> list[RetrievedChunk]:
-        return self.vector_store.query(plan.question, plan.top_k)
+        return self.vector_store.query(plan.resolved_search_query(), plan.top_k)

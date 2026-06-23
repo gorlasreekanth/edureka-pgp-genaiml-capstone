@@ -11,6 +11,11 @@ from src.models import IndexResult, QueryResult, TextChunk
 from src.rag.chunking import chunk_documents
 from src.rag.embeddings import create_embedding_provider
 from src.retrieval import ChromaVectorStore
+from src.validation import (
+    InputValidationError,
+    validate_question,
+    validate_uploaded_file,
+)
 
 
 ProgressCallback = Callable[[str], None]
@@ -32,10 +37,11 @@ class DocumentQAWorkflow:
         retrieval_agent: RetrievalAgent,
         answer_agent: AnswerAgent,
         validation_agent: ValidationAgent,
+        query_planner: QueryPlannerAgent | None = None,
     ) -> None:
         self.config = config
         self.vector_store = vector_store
-        self.query_planner = QueryPlannerAgent()
+        self.query_planner = query_planner or QueryPlannerAgent()
         self.retrieval_agent = retrieval_agent
         self.answer_agent = answer_agent
         self.validation_agent = validation_agent
@@ -60,6 +66,7 @@ class DocumentQAWorkflow:
             retrieval_agent=RetrievalAgent(vector_store),
             answer_agent=AnswerAgent(llm_client),
             validation_agent=ValidationAgent(),
+            query_planner=QueryPlannerAgent(llm_client=llm_client),
         )
 
     def index_files(
@@ -74,9 +81,13 @@ class DocumentQAWorkflow:
         _report(progress_callback, "Parsing uploaded files...")
         documents = []
         errors: list[str] = []
+        limits = self.config.validation_limits
         for file_name, content in files:
             try:
+                validate_uploaded_file(file_name, content, limits)
                 documents.extend(load_uploaded_file(file_name, content))
+            except InputValidationError as exc:
+                errors.append(str(exc))
             except DocumentLoadError as exc:
                 errors.append(str(exc))
 
@@ -112,7 +123,8 @@ class DocumentQAWorkflow:
         )
 
     def ask(self, question: str, top_k: int | None = None) -> QueryResult:
-        plan = self.query_planner.plan(question, top_k or self.config.retrieval_top_k)
+        cleaned_question = validate_question(question, self.config.validation_limits)
+        plan = self.query_planner.plan(cleaned_question, top_k or self.config.retrieval_top_k)
         sources = self.retrieval_agent.retrieve(plan)
         draft = self.answer_agent.answer(plan, sources)
         validation = self.validation_agent.validate(

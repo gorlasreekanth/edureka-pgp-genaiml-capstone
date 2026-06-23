@@ -106,7 +106,8 @@ def _build_grounded_prompt(question: str, sources: list[RetrievedChunk]) -> str:
 
 def _build_retrieval_only_answer(sources: list[RetrievedChunk]) -> str:
     lines = [
-        "This is a retrieval-only answer because LLM generation is not configured yet. Vector search found these relevant passages:",
+        "The LLM isn't configured yet, so here is a retrieval-only answer. "
+        "These are the passages the vector store found for your question:",
         "",
     ]
     for index, source in enumerate(sources[:3], start=1):
@@ -117,7 +118,8 @@ def _build_retrieval_only_answer(sources: list[RetrievedChunk]) -> str:
     lines.extend(
         [
             "",
-            "Use these passages as the provisional answer and check the source sections below for full context.",
+            "Treat this as a starting point. Open the source sections below to read the surrounding context "
+            "before relying on any of it.",
         ]
     )
     return "\n".join(lines)

@@ -58,6 +58,8 @@ The PDF was reviewed at implementation kickoff and calls out the same core tasks
 | Fast local embeddings | Default to `local-hash`, with SentenceTransformers still available through `EMBEDDING_MODEL` | Local demos should not look stuck while downloading a model; reviewers can opt into stronger semantic retrieval when the environment is ready. |
 | Ollama Cloud auth | Treat `https://ollama.com` as the Cloud host and require `OLLAMA_API_KEY` before making LLM calls | The direct Cloud API uses bearer-token auth, while local Ollama should still work without a key. |
 | Used-source display | Ask the answer model to end with a parseable `Used sources:` line and show those sources separately from all retrieved candidates | Reviewers can see which chunks were selected by retrieval and which chunks the generated answer claims to rely on. |
+| Input validation | Add a small `src/validation.py` with file-size, extension, length, and prompt-injection checks, wired into both `app.py` and the workflow | Catches bad uploads and obvious prompt-injection attempts before they reach loaders, embeddings, or the LLM, and gives the same protection to any future caller. |
+| Planner upgrade | Let `QueryPlannerAgent` call the LLM (when configured) for intent, a retrieval-optimized rewrite of the question, and an adaptive `top_k`. Fall back to the deterministic path on any failure | Closes the gap with comparable submissions that use a framework's tool-calling agent. The pipeline now has two LLM-using agents (planner and answer) without pulling in LangChain or LlamaIndex. |
 
 ## RAG and agent plan
 
@@ -86,7 +88,7 @@ Agent roles should stay simple at first:
 | AnswerAgent | Builds a grounded prompt, calls Ollama Cloud API, and parses the model's declared used-source numbers. |
 | ValidationAgent | Checks for missing context, empty answers, weak retrieval, missing source-use declarations, and unsupported-answer warnings. |
 
-Only the answer agent needs an LLM call in the MVP. Keeping the planner and validator mostly rule-based should make the demo faster, cheaper, and easier to debug.
+Only the answer agent calls the LLM in the first MVP cut. After comparing against another team's submission, the planner was upgraded to use the LLM too (see the planner upgrade entry below). Retrieval and validation remain rule-based, which keeps the pipeline cheap to run and easy to reason about.
 
 ## Options considered
 

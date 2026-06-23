@@ -6,6 +6,7 @@ from src.config import AppConfig
 from src.llm import LLMClientError, LLMConfigurationError
 from src.models import IndexResult, QueryResult, RetrievedChunk, normalize_source_indices
 from src.rag import DocumentQAWorkflow
+from src.validation import InputValidationError, validate_question, validate_uploaded_file
 
 
 @st.cache_resource(show_spinner=False)
@@ -20,7 +21,7 @@ def main() -> None:
     st.set_page_config(page_title="Enterprise Document Q&A")
     st.title("Enterprise Document Q&A")
     st.write(
-        "Upload enterprise documents, ask a natural-language question, and get a grounded answer with sources."
+        "Upload a few documents, ask a question, and get an answer that cites the passages it used."
     )
 
     top_k = _render_sidebar(config)
@@ -45,12 +46,12 @@ def _render_sidebar(config: AppConfig) -> int:
             help="How many matching chunks to retrieve for each question.",
         )
         if config.embedding_model == "local-hash":
-            st.info("Using fast local embeddings. Switch `EMBEDDING_MODEL` for stronger semantic retrieval.")
+            st.info("Using fast local embeddings. Set `EMBEDDING_MODEL` to a sentence-transformer for stronger retrieval.")
         if config.has_configured_llm:
             st.success(f"{config.ollama_runtime_label} model: `{config.ollama_model}`")
         else:
             st.warning(
-                f"{config.llm_configuration_issue} Retrieval will still work, but final answers need `.env`."
+                f"{config.llm_configuration_issue} Retrieval still works, but you'll get a retrieval-only answer until `.env` is set."
             )
         if config.uses_ollama_cloud:
             key_status = "configured" if config.ollama_api_key else "missing"
@@ -78,10 +79,28 @@ def _render_upload_and_index(workflow: DocumentQAWorkflow) -> None:
             st.session_state.pop("indexed", None)
             st.session_state.pop("index_result", None)
             workflow.vector_store.clear()
-            st.success("Indexed document state was cleared.")
+            st.success("Cleared the indexed documents. Upload again to rebuild the index.")
 
     if index_clicked:
-        files = [(file.name, file.getvalue()) for file in uploaded_files]
+        limits = workflow.config.validation_limits
+        files: list[tuple[str, bytes]] = []
+        rejected: list[str] = []
+        for file in uploaded_files:
+            content = file.getvalue()
+            try:
+                validate_uploaded_file(file.name, content, limits)
+            except InputValidationError as exc:
+                rejected.append(str(exc))
+                continue
+            files.append((file.name, content))
+
+        for message in rejected:
+            st.error(message)
+
+        if not files:
+            st.warning("Nothing valid to index. Fix the errors above and try again.")
+            return
+
         with st.status("Preparing documents for search...", expanded=True) as status:
             result = workflow.index_files(
                 files,
@@ -99,16 +118,17 @@ def _render_upload_and_index(workflow: DocumentQAWorkflow) -> None:
     if isinstance(result, IndexResult):
         _render_index_result(result)
     elif not uploaded_files:
-        st.info("Upload one or more supported files to build the searchable document index.")
+        st.info("Upload a PDF, TXT, CSV, or Excel file to get started.")
 
 
 def _render_index_result(result: IndexResult) -> None:
     if result.indexed_chunk_count > 0:
         st.success(
-            f"Indexed {result.indexed_chunk_count} chunks from {result.document_count} parsed document sections."
+            f"Indexed {result.indexed_chunk_count} chunks from {result.document_count} document sections. "
+            "Ready for questions."
         )
     else:
-        st.warning("No document text was indexed yet.")
+        st.warning("Nothing was indexed yet. Check the file errors below.")
 
     if result.errors:
         with st.expander("Files that need attention", expanded=True):
@@ -128,17 +148,20 @@ def _render_question_flow(workflow: DocumentQAWorkflow, top_k: int) -> None:
         ask_clicked = st.form_submit_button("Ask documents", disabled=not indexed)
 
     if not indexed:
-        st.info("Index documents first, then ask a question.")
+        st.info("Index some documents first, then come back here to ask a question.")
         return
 
     if ask_clicked:
-        question = question.strip()
-        if not question:
-            st.warning("Enter a question before asking the documents.")
+        try:
+            cleaned_question = validate_question(
+                question, workflow.config.validation_limits
+            )
+        except InputValidationError as exc:
+            st.warning(str(exc))
             return
         with st.spinner("Retrieving sources and preparing an answer..."):
             try:
-                result = workflow.ask(question, top_k=top_k)
+                result = workflow.ask(cleaned_question, top_k=top_k)
             except (LLMConfigurationError, LLMClientError) as exc:
                 st.error(str(exc))
                 return
@@ -171,11 +194,11 @@ def _render_query_result(result: QueryResult) -> None:
             ):
                 st.write(source.text)
     elif result.used_llm and sources:
-        st.info("No specific source was marked as used. The retrieved candidates are shown below.")
+        st.info("The model didn't flag any specific source. The retrieved candidates are listed below.")
 
     st.markdown("### Retrieved source candidates")
     if not sources:
-        st.write("No source chunks were retrieved.")
+        st.write("No source chunks were retrieved for this question.")
         return
 
     used_source_numbers = set(used_source_indices)

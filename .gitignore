@@ -20,6 +20,7 @@ uploads/
 # Local/private documents used during manual testing
 *.pdf
 !project-overview-guidelines.pdf
+!samples/*.pdf
 
 # OS/editor noise
 .DS_Store

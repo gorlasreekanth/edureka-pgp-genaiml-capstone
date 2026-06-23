@@ -7,6 +7,13 @@ from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 
+from src.validation import (
+    DEFAULT_MAX_FILE_SIZE_MB,
+    DEFAULT_MAX_QUESTION_CHARS,
+    DEFAULT_MIN_QUESTION_CHARS,
+    ValidationLimits,
+)
+
 
 @dataclass(frozen=True)
 class AppConfig:
@@ -22,6 +29,9 @@ class AppConfig:
     chunk_overlap: int
     retrieval_top_k: int
     min_relevance_score: float
+    max_file_size_mb: int = DEFAULT_MAX_FILE_SIZE_MB
+    min_question_chars: int = DEFAULT_MIN_QUESTION_CHARS
+    max_question_chars: int = DEFAULT_MAX_QUESTION_CHARS
     ollama_timeout_seconds: int = 120
 
     @classmethod
@@ -39,6 +49,17 @@ class AppConfig:
             chunk_overlap=_get_int("CHUNK_OVERLAP", 120),
             retrieval_top_k=_get_int("RETRIEVAL_TOP_K", 4),
             min_relevance_score=_get_float("MIN_RELEVANCE_SCORE", 0.25),
+            max_file_size_mb=_get_int("MAX_FILE_SIZE_MB", DEFAULT_MAX_FILE_SIZE_MB),
+            min_question_chars=_get_int("MIN_QUESTION_CHARS", DEFAULT_MIN_QUESTION_CHARS),
+            max_question_chars=_get_int("MAX_QUESTION_CHARS", DEFAULT_MAX_QUESTION_CHARS),
+        )
+
+    @property
+    def validation_limits(self) -> ValidationLimits:
+        return ValidationLimits(
+            max_file_size_mb=self.max_file_size_mb,
+            min_question_chars=self.min_question_chars,
+            max_question_chars=self.max_question_chars,
         )
 
     @property

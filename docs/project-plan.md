@@ -1,10 +1,25 @@
 # Project plan
 
-This plan is the handoff for the implementation session. Keep it current as the project moves from design to working code.
+This started as the handoff plan from design to implementation. It is kept up to date as the project evolves, with current status near the top and historical planning preserved below for traceability.
+
+## Current status (June 2026)
+
+The end-to-end document Q&A flow is working:
+
+- Streamlit app under `app.py` with upload, indexing, question, and answer flows.
+- Ingestion loaders for PDF, TXT, CSV, and Excel under `src/ingestion/`.
+- Chunking + Chroma vector store under `src/rag/` and `src/retrieval/`.
+- Four cooperating agents under `src/agents/` (planner, retrieval, answer, validation). The planner and answer agents call the LLM when configured; the other two stay deterministic.
+- Ollama client (Cloud or local) under `src/llm/`. A `local-hash` embedding provider is the default; switching to `sentence-transformers/all-MiniLM-L6-v2` is one env var away.
+- Input validation in `src/validation.py` with a small prompt-injection check, wired into both `app.py` and the workflow.
+- 42 tests across loaders, chunking, embeddings, the workflow, the planner, validation, and the LLM client.
+- Demo samples in `samples/` covering all four supported file types.
+
+Open follow-ups are still listed under **Remaining nice-to-haves** at the end of this file.
 
 ## Goal
 
-Build a Streamlit-based Generative AI document Q&A app that supports PDF, TXT, CSV, and Excel uploads. The app should retrieve relevant document chunks, call Ollama Cloud API for grounded answers, show sources, and demonstrate lightweight agent-based reasoning.
+Build a Streamlit-based Generative AI document Q&A app that supports PDF, TXT, CSV, and Excel uploads. The app should retrieve relevant document chunks, call Ollama Cloud or local Ollama for grounded answers, show sources, and demonstrate lightweight agent-based reasoning.
 
 ## Planned implementation phases
 
