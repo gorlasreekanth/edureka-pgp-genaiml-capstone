@@ -1,4 +1,4 @@
-# edureka-pgp-genaiml-capstone
+# Enterprise Document Q&A RAG Agent
 
 A document Q&A app for the Edureka / Illinois Tech Generative AI and ML capstone. Upload PDFs, plain text, CSVs, or Excel files, ask a question, and get an answer that cites the exact passages it used.
 
