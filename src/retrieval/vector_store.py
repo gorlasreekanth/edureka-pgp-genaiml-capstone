@@ -1,10 +1,33 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 
-from src.models import RetrievedChunk, TextChunk
-from src.rag.embeddings import EmbeddingProvider
+# Silence Chroma's anonymous telemetry. Setting the env var before importing
+# chromadb stops the posthog client from initializing, and disabling the
+# telemetry loggers suppresses the noisy "Failed to send telemetry event"
+# messages emitted when the bundled posthog client hits a signature
+# mismatch with the installed posthog version.
+os.environ.setdefault("ANONYMIZED_TELEMETRY", "False")
+os.environ.setdefault("CHROMA_TELEMETRY", "False")
+
+import logging  # noqa: E402 - kept after the env vars on purpose
+
+for _logger_name in (
+    "chromadb",
+    "chromadb.telemetry",
+    "chromadb.telemetry.product",
+    "chromadb.telemetry.product.posthog",
+    "posthog",
+):
+    _quiet_logger = logging.getLogger(_logger_name)
+    _quiet_logger.disabled = True
+    _quiet_logger.setLevel(logging.CRITICAL)
+    _quiet_logger.propagate = False
+
+from src.models import RetrievedChunk, TextChunk  # noqa: E402
+from src.rag.embeddings import EmbeddingProvider  # noqa: E402
 
 
 class ChromaVectorStore:
