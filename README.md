@@ -96,73 +96,9 @@ A single file or test:
 
 ## Architecture
 
-```mermaid
-flowchart TB
-    User([User])
+Two flows: an **indexing path** (validate → parse → chunk → embed → store in Chroma) and a **query path** that runs four cooperating agents (`QueryPlannerAgent`, `RetrievalAgent`, `AnswerAgent`, `ValidationAgent`). Two of the four agents call the LLM; both have a deterministic fallback. The planner rewrites the question for retrieval and picks an adaptive `top_k`; the answer agent builds a grounded prompt around the user's original wording and parses a `Used sources:` line so the UI can separate **Sources used** from **Retrieved candidates**.
 
-    subgraph UI["Streamlit UI (app.py)"]
-      Upload[Upload PDF / TXT / CSV / XLSX]
-      Question[Ask a question]
-    end
-
-    subgraph Validation["Input validation (src.validation)"]
-      VFile[validate_uploaded_file]
-      VQ[validate_question]
-    end
-
-    subgraph Index["Indexing path"]
-      Loaders[src.ingestion.loaders]
-      Chunker[src.rag.chunking]
-      Embed[src.rag.embeddings]
-      Chroma[(Chroma vector store)]
-    end
-
-    subgraph Agents["Query path - 4 agents"]
-      Planner[QueryPlannerAgent]
-      Retrieval[RetrievalAgent]
-      Answer[AnswerAgent]
-      Validator[ValidationAgent]
-    end
-
-    Ollama[[OllamaClient<br/>Cloud or local]]
-
-    User -- upload --> Upload
-    Upload --> VFile --> Loaders --> Chunker --> Embed --> Chroma
-
-    User -- question --> Question
-    Question --> VQ --> Planner --> Retrieval --> Answer --> Validator
-    Validator -- answer + sources + warnings --> User
-
-    Retrieval -- similarity search --> Chroma
-    Planner -. intent, rewrite, top_k .-> Ollama
-    Answer -. grounded prompt .-> Ollama
-
-    classDef store fill:#f5f0e1,stroke:#7a6a3f
-    classDef llm fill:#e8eef8,stroke:#3b5b8a
-    class Chroma store
-    class Ollama llm
-```
-
-Dashed arrows are LLM calls and have a deterministic fallback when the LLM is not configured. Solid arrows always run. Each box maps one-to-one to a folder under `src/`, so any concern can change without touching the others.
-
-## Workflow
-
-1. Upload files in Streamlit; each upload is checked for extension, size, and non-emptiness.
-2. Files are parsed into normalized text with source metadata (file name, page, sheet, row range, chunk index).
-3. Text is split into overlapping chunks, embedded with the configured provider, and stored in a local Chroma collection.
-4. The question is validated (length, prompt-injection sniff). The planner asks the LLM for an intent label, a retrieval-optimized rewrite, and an adaptive `top_k`, with a deterministic fallback when the LLM is unavailable.
-5. The retrieval agent pulls the top matching chunks using the planner's rewrite.
-6. The answer agent builds a grounded prompt around the user's original question, asks the LLM to cite source numbers, and parses the `Used sources:` line. Without an LLM, a retrieval-only answer is returned.
-7. The validation agent surfaces warnings for missing context, weak retrieval, empty answers, or placeholder LLM settings.
-
-## Agent roles
-
-| Agent | Role | LLM? |
-|---|---|---|
-| QueryPlannerAgent | Cleans the question. With an LLM, asks for `{intent, search_query, top_k}` and falls back to the deterministic default on any failure. | ✅ |
-| RetrievalAgent | Searches the vector store using the planner's rewritten query. | ❌ |
-| AnswerAgent | Builds a grounded prompt, asks the LLM to cite used source numbers, or returns a retrieval-only answer when the LLM is not configured. | ✅ |
-| ValidationAgent | Adds warnings for missing context, weak retrieval, empty responses, or placeholder LLM settings. | ❌ |
+Full diagram, module map, data shapes, and rationale: [`docs/architecture.md`](docs/architecture.md).
 
 ## Deployment
 
@@ -209,5 +145,6 @@ Both validation helpers are called in `app.py` (for the user-facing error) and i
 
 ## Planning docs
 
-- `docs/decisions.md` — running decision log: assumptions, options considered, choices made, reasons.
-- `docs/project-plan.md` — phase plan and current status.
+- [`docs/architecture.md`](docs/architecture.md) — full system diagram, module map, indexing and query paths, agent details, data shapes, fallbacks, rationale.
+- [`docs/decisions.md`](docs/decisions.md) — running decision log: assumptions, options considered, choices made, reasons.
+- [`docs/project-plan.md`](docs/project-plan.md) — phase plan and current status.
