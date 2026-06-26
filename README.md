@@ -96,17 +96,54 @@ A single file or test:
 
 ## Architecture
 
-```text
-app.py
- -> src.ingestion       loads PDF, TXT, CSV, and Excel content
- -> src.rag.chunking    prepares overlapping chunks
- -> src.rag.embeddings  local-hash or SentenceTransformers vectors
- -> src.retrieval       stores and searches chunks in Chroma
- -> src.agents          plan, retrieve, answer, validate
- -> src.llm             calls Ollama Cloud or local Ollama
+```mermaid
+flowchart TB
+    User([User])
+
+    subgraph UI["Streamlit UI (app.py)"]
+      Upload[Upload PDF / TXT / CSV / XLSX]
+      Question[Ask a question]
+    end
+
+    subgraph Validation["Input validation (src.validation)"]
+      VFile[validate_uploaded_file]
+      VQ[validate_question]
+    end
+
+    subgraph Index["Indexing path"]
+      Loaders[src.ingestion.loaders]
+      Chunker[src.rag.chunking]
+      Embed[src.rag.embeddings]
+      Chroma[(Chroma vector store)]
+    end
+
+    subgraph Agents["Query path - 4 agents"]
+      Planner[QueryPlannerAgent]
+      Retrieval[RetrievalAgent]
+      Answer[AnswerAgent]
+      Validator[ValidationAgent]
+    end
+
+    Ollama[[OllamaClient<br/>Cloud or local]]
+
+    User -- upload --> Upload
+    Upload --> VFile --> Loaders --> Chunker --> Embed --> Chroma
+
+    User -- question --> Question
+    Question --> VQ --> Planner --> Retrieval --> Answer --> Validator
+    Validator -- answer + sources + warnings --> User
+
+    Retrieval -- similarity search --> Chroma
+    Planner -. intent, rewrite, top_k .-> Ollama
+    Answer -. grounded prompt .-> Ollama
+
+    classDef store fill:#f5f0e1,stroke:#7a6a3f
+    classDef llm fill:#e8eef8,stroke:#3b5b8a
+    class Chroma store
+    class Ollama llm
 ```
 
-Each concern lives in its own folder so one piece can change without touching the others.
+Dashed arrows are LLM calls and have a deterministic fallback when the LLM is not configured. Solid arrows always run. Each box maps one-to-one to a folder under `src/`, so any concern can change without touching the others.
 
 ## Workflow
 
